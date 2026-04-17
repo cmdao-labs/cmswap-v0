@@ -10,19 +10,48 @@ import { useSwapChain } from '@/components/cmswap/useSwapChain'
 import { getDecimals } from '@/components/cmswap/swap/utils'
 import { formatUnits, parseUnits } from 'viem'
 import { config } from '@/config/reown'
+import { useAccount } from 'wagmi'
+import { getBalance, readContract } from '@wagmi/core'
 
 type UIToken = { name: string; value: '0xstring'; logo: string; decimal: number }
 
 export default function HeroSwapCard() {
     const DEFAULT_SAMPLE_AMOUNT = "100"
-    const { tokens: chainTokens, qouterV2Contract } = useSwapChain()
+    const { tokens: chainTokens, qouterV2Contract, isNative, erc20ABI } = useSwapChain()
+    const { address, chainId } = useAccount()
     const tokens = chainTokens as readonly UIToken[]
     const { tokenA, tokenB, setTokenA, setTokenB } = useSwapTokenSelection(tokens, {defaultTokenAIndex: 0, defaultTokenBIndex: 2})
-    const { resolveTokenAddress, quoteExactInputSingle } = useSwapQuote({config, contract: qouterV2Contract, tokens})
+    const { quoteExactInputSingle } = useSwapQuote({config, contract: qouterV2Contract, tokens})
     const [amountA, setAmountA] = React.useState("")
     const [amountB, setAmountB] = React.useState("")
     const [tokenABalance, setTokenABalance] = React.useState("0.0000")
     const [tokenBBalance, setTokenBBalance] = React.useState("0.0000")
+
+    const fetchBalance = React.useCallback(async (token: UIToken): Promise<string> => {
+        if (!address || !config) return "0.0000"
+        try {
+            if (isNative(token.value)) {
+                const res = await getBalance(config, { address: address as `0x${string}` })
+                return formatUnits(res.value, res.decimals)
+            }
+            if (!erc20ABI) return "0.0000"
+            const raw = await readContract(config, {
+                address: token.value as `0x${string}`,
+                abi: erc20ABI,
+                functionName: 'balanceOf',
+                args: [address],
+            }) as bigint
+            return formatUnits(raw, getDecimals(token))
+        } catch {
+            return "0.0000"
+        }
+    }, [address, isNative, erc20ABI])
+
+    React.useEffect(() => {
+        if (!address) { setTokenABalance("0.0000"); setTokenBBalance("0.0000"); return }
+        fetchBalance(tokenA).then(setTokenABalance)
+        fetchBalance(tokenB).then(setTokenBBalance)
+    }, [address, chainId, tokenA.value, tokenB.value, fetchBalance])
     const [open, setOpen] = React.useState(false)
     const [open2, setOpen2] = React.useState(false)
     const [isQuoteLoading, setIsQuoteLoading] = React.useState(false)
@@ -78,9 +107,8 @@ export default function HeroSwapCard() {
     }
     const handleSwapClick = () => {
         const params = new URLSearchParams()
-        if (tokenA.value !== '0x' as '0xstring') params.set('from', tokenA.value)
-        if (tokenB.value !== '0x' as '0xstring') params.set('to', tokenB.value)
-        if (amountA) params.set('amount', amountA)
+        if (tokenA.value !== '0x' as '0xstring') params.set('input', tokenA.value)
+        if (tokenB.value !== '0x' as '0xstring') params.set('output', tokenB.value)
         window.location.href = `/swap${params.toString() ? '?' + params.toString() : ''}`
     }
 
@@ -120,7 +148,7 @@ export default function HeroSwapCard() {
                     onPopoverOpenChange={setOpen2}
                     balanceLabel={tokenBBalanceLabel}
                 />
-                <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-[#00FF41] to-emerald-500 text-black font-semibold hover:from-[#00FF41]/90 hover:to-emerald-400/90 transition-all shadow-lg shadow-[#00FF41]/20" onClick={handleSwapClick} disabled={!amountA || !amountB || isQuoteLoading}>
+                <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-[#00FF41] to-emerald-500 text-black font-semibold hover:from-[#00FF41]/90 hover:to-emerald-400/90 transition-all shadow-lg shadow-[#00FF41]/20" onClick={handleSwapClick} disabled={!amountA || isQuoteLoading}>
                     {isQuoteLoading ? 'Quoting...' : 'Swap'}
                 </Button>
             </div>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import AnnouncementPopup from '@/components/cmswap/AnnouncementPopup'
 
 export default function Headbar() {
     const queryClient = new QueryClient()
@@ -13,7 +14,8 @@ export default function Headbar() {
     const handleLinkClick = () => {setIsMenuOpen(false)}
     const { chainId } = useAccount()
     return (
-        <QueryClientProvider client={queryClient}> 
+        <QueryClientProvider client={queryClient}>
+            <AnnouncementPopup />
             <header className='h-[85px] w-full lg:w-full fixed backdrop-blur-lg text-sm text-white z-999'>
                 <div className='flex flex-row items-center justify-between'>
                     <div className="gap-2 flex flex-row items-center p-6">
@@ -32,6 +34,12 @@ export default function Headbar() {
                                     </Link>
                                       <Link href="/liquidity-pool" className="text-white/70 hover:text-[#32ffa7] transition-colors text-sm">
                                         <Button variant="ghost" className="cursor-pointer">Liquidity</Button>
+                                    </Link>
+                                    <Link href="/announcement" className="text-white/70 hover:text-[#32ffa7] transition-colors text-sm relative">
+                                        <Button variant="ghost" className="cursor-pointer relative">
+                                            Announcement
+                                            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#00FF41] shadow-[0_0_6px_#00FF41]" />
+                                        </Button>
                                     </Link>
                                 </div>
                             </div>
@@ -58,6 +66,12 @@ export default function Headbar() {
                             <Link href="/pump" className="text-white/70 hover:text-green-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"><Button variant="ghost" className='cursor-pointer' onClick={handleLinkClick}>Pump</Button></Link>
                             <Link href="/liquidity-pool" className="text-white/70 hover:text-green-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"><Button variant="ghost" className='cursor-pointer' onClick={handleLinkClick}>Liquidity</Button></Link>
                             {chainId === 0 && (<Link href="/referral" className="text-white/70 hover:text-green-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"><Button variant="ghost" className='cursor-pointer' onClick={handleLinkClick}>Referral Program</Button></Link>)}
+                            <Link href="/announcement" className="text-white/70 hover:text-green-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200">
+                                <Button variant="ghost" className='cursor-pointer relative' onClick={handleLinkClick}>
+                                    Announcement
+                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#00FF41] shadow-[0_0_6px_#00FF41]" />
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                 )}
